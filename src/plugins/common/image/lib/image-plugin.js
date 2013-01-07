@@ -2,7 +2,7 @@
 /*
 * Aloha Image Plugin - Allow image manipulation in Aloha Editor
 *
-* Author & Copyright (c) 2012 Gentics Software GmbH
+* Author & Copyright (c) 2013 Gentics Software GmbH
 * aloha-sales@gentics.com
 * Contributors
 *		Johannes Schüth - http://jotschi.de
@@ -463,6 +463,7 @@ define([
 
 		/**
 		 * Automatically resize the image to fit into defined bounds.
+		 * @param doScaleUp if true, small images are scaled up to fit minimum size
 		 */
 		autoResize: function(doScaleUp) {
 			// @todo handle ratio mismatches (eg 4:3 is set but image is 16:9 --> image needs to be cut)
@@ -567,7 +568,7 @@ define([
 				if (e.keyCode === 8 || e.keyCode === 46) {
 
 					// Only resize if field values are ok
-					if (plugin._updateFields(fieldName, $(this).val(), false, plugin.aspectRatioValue)) {
+					if (plugin._updateFields(fieldName, $(this).val(), false)) {
 						// Check if we are currently in cropping mode
 						if (typeof plugin.jcAPI !== 'undefined' && plugin.jcAPI !== null) {
 							plugin.setCropAreaByFieldValue();
@@ -579,7 +580,7 @@ define([
 				} else if (e.keyCode <= 57 && e.keyCode >= 48 || e.keyCode <= 105 && e.keyCode >= 96 ) {
 
 					// Only resize if field values are ok
-					if (plugin._updateFields(fieldName, $(this).val(), false, plugin.aspectRatioValue)) {
+					if (plugin._updateFields(fieldName, $(this).val(), false)) {
 						// Check if we are currently in cropping mode
 						if (typeof plugin.jcAPI !== 'undefined' && plugin.jcAPI !== null) {
 							plugin.setCropAreaByFieldValue();
@@ -606,7 +607,7 @@ define([
 					var newValue = parseInt($(this).val(), 10) + delta;
 
 					// Only resize if field values are ok
-					if (plugin._updateFields(fieldName, newValue, isDecrement, plugin.aspectRatioValue)) {
+					if (plugin._updateFields(fieldName, newValue, isDecrement)) {
 						// Check if we are currently in cropping mode
 						if (typeof plugin.jcAPI !== 'undefined' && plugin.jcAPI !== null) {
 							plugin.setCropAreaByFieldValue();
@@ -640,7 +641,7 @@ define([
 				}
 
 				// Only resize if field values are ok
-				if (plugin._updateFields(fieldName, newValue, decrement, plugin.aspectRatioValue)) {
+				if (plugin._updateFields(fieldName, newValue, decrement)) {
 					// Check if we are currently in cropping mode
 					if (typeof plugin.jcAPI !== 'undefined' && plugin.jcAPI !== null) {
 						plugin.setCropAreaByFieldValue();
@@ -813,8 +814,12 @@ define([
 		 * Helper function that checks a field-input (of height or width), adjusts
 		 * its value to conform to minimum/maximum values, and corrects the other field
 		 * if the aspect ratio is to be kept
+		 * @param primaryFieldName the field which is currently edited ('height' or 'width')
+		 * @param newValue the value as it was entered into the primary field
+		 * @param isDecrement true if value is being decreased (by key or mousewheel); prevents decreasing below minimum
+		 * @return true if values are correct or have been corrected, and image can be resized
 		 */
-		_updateFields: function (primaryFieldName, newValue, isDecrement, aspectRatio) {
+		_updateFields: function (primaryFieldName, newValue, isDecrement) {
 			var plugin = this;
 
 			var primaryField = null;
@@ -830,7 +835,7 @@ define([
 			if (primaryFieldName == 'width') {
 				primaryField = jQuery("#" + plugin.ui.imgResizeWidthField.getInputId());
 				secondaryField = jQuery("#" + plugin.ui.imgResizeHeightField.getInputId());
-				adjustedAspectRatio = ( 1 / aspectRatio );
+				adjustedAspectRatio = ( 1 / plugin.aspectRatioValue );
 
 				primaryMin = plugin.settings.minWidth;
 				primaryMax = plugin.settings.maxWidth;
@@ -840,19 +845,20 @@ define([
 			} else if (primaryFieldName == 'height') {
 				primaryField = jQuery("#" + plugin.ui.imgResizeHeightField.getInputId());
 				secondaryField = jQuery("#" + plugin.ui.imgResizeWidthField.getInputId());
-				adjustedAspectRatio = aspectRatio;
+				adjustedAspectRatio = plugin.aspectRatioValue;
 
 				primaryMin = plugin.settings.minHeight;
 				primaryMax = plugin.settings.maxHeight;
 				secondaryMin = plugin.settings.minWidth;
 				secondaryMax = plugin.settings.maxWidth;
 			} else {
+				//if primaryFieldName is neither width nor height, don't update the fields
 				return false;
 			}
 
-			// If the current value of the field can't be parsed it is not updated
 			if (isNaN(newValue)) {
 				primaryField.css('background-color', 'red');
+				// If the current value of the field can't be parsed it is not updated
 				return false;
 			}
 			else {
@@ -1296,7 +1302,7 @@ define([
 			img.src = plugin.getPluginFocus().attr('src');
 		},
 		/**
-		 * Reset the image to it's original properties
+		 * Reset the image to its original properties
 		 */
 		reset: function () {
 			if (this.settings.ui.crop) {
