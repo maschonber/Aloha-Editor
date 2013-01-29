@@ -30,5 +30,5 @@ overwritten by custom background images.
               of the anchor cell of the virtual cell selection.
 - **BUGFIX**: table plugin: Merging cell is now fixed to work correctly, after a
               previous fix introduced a bug through circular dependency.
-- **BUGFIX**: Fix display of values after image-reset and improve the
-              size-check of image-resizing
+- **BUGFIX**: image plugin: Various fixes and improvements for resizing, cropping and resetting images have been added, 
+              to improve the cohesion between displayed values and actual sizes.
